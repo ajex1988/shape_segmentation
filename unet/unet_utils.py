@@ -78,7 +78,7 @@ class Recorder:
 
            # Write the serialized 
            writer.write(serialized)
-    print '\nWritten images and mask into {}'.format(out_path)
+    print('\nWritten images and mask into {}'.format(out_path))
 
 
  def imgs_input_fn(self,filenames,resize_height,resize_width,shuffle=False,repeat_count=-1,batch_size=32):
