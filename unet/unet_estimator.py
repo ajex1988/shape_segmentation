@@ -397,7 +397,7 @@ def test_3():
     Zhe Zhu, 20191231
     Update: Evaluate the models 0113, 2020/01/14'''
     #eval_and_save_v2('/mnt/sdc/ShapeTexture/models/1218', '/mnt/sdc/ShapeTexture/simulation_data/1218/val.tfrecord', '/mnt/sdc/ShapeTexture/models/1218_eva')
-    eval_and_save_v2('/mnt/sdc/ShapeTexture/models/0207', '/mnt/sdc/ShapeTexture/simulation_data/0208/val.tfrecord', '/mnt/sdc/ShapeTexture/models/0208_eva_2')
+    eval_and_save_v2('/mnt/sdc/ShapeTexture/models/0224', '/mnt/sdc/ShapeTexture/simulation_data/0224/val.tfrecord', '/mnt/sdc/ShapeTexture/models/0224_eva')
 if __name__=='__main__':
     #model_dir = sys.argv[1]
     #val_tfrecord_file = sys.argv[2]

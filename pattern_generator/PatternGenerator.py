@@ -17,6 +17,44 @@ def _bytes_feature(value):
 def _float_feature(value):
     return tf.train.Feature(float_list=tf.train.FloatList(value=[value]))
 
+def dataset_decode_2d(serialized, resize_height=512, resize_width=512):
+    features = {
+        'file_name': tf.FixedLenFeature([], tf.string, ''),
+        'height': tf.FixedLenFeature([], tf.int64, 0),
+        'width': tf.FixedLenFeature([], tf.int64, 0),
+        'image': tf.FixedLenFeature([], tf.string, ''),
+        'mask': tf.FixedLenFeature([], tf.string, '')
+    }
+
+    parsed_example = tf.parse_single_example(serialized=serialized, features=features)
+    height = parsed_example['height']
+    width = parsed_example['width']
+    image_shape = tf.stack([height, width, 3])
+    mask_shape = tf.stack([height, width, 1])
+
+    image_raw = parsed_example['image']
+    mask_raw = parsed_example['mask']
+
+    # decode the raw bytes so it becomes a tensor with type
+
+    image = tf.decode_raw(image_raw, tf.float64)
+    image = tf.cast(image, tf.float32)
+    image = tf.reshape(image, image_shape)
+    image = tf.div(tf.subtract(image,
+                        tf.reduce_min(image) + 1e-8),
+                       tf.subtract(tf.reduce_max(image),
+                                   tf.reduce_min(image)) + 1e-8) * 255.0
+    image = tf.image.resize_images(image, (resize_height, resize_width))
+
+    mask = tf.decode_raw(mask_raw, tf.float64)
+    mask = tf.cast(mask, tf.float32)
+    mask = tf.reshape(mask, mask_shape)
+    mask = mask / (tf.reduce_max(mask) + 1e-7)
+    mask = tf.image.resize_images(mask, (resize_height, resize_width))
+
+
+    d = image, mask
+    return d
 class BasicShape:
     def __init__(self):
         self.bbox = {}
@@ -1100,6 +1138,7 @@ def make_texture_folders_v2(img_folder,texture_num,output_folder):
     Construct texture_num texture folders. This function can be used to construct the texture folders
     to alter the texture of the target shape. Triangle, rectangle and background have different texture
     Zhe Zhu, 2020/02/19
+    2020/02/21 bug fix: bg_img should always set to 512*512
     '''
     tex_img_list = glob.glob(img_folder+'/*')
     if len(tex_img_list) < texture_num*3:
@@ -1126,11 +1165,76 @@ def make_texture_folders_v2(img_folder,texture_num,output_folder):
             triangle_img = cv2.resize(triangle_img,(texture_height,texture_width))
         if rectangle_img.shape[0] < texture_height or rectangle_img.shape[1] < texture_width:
             rectangle_img = cv2.resize(rectangle_img,(texture_height,texture_width))
-        if bg_img.shape[0] < texture_height or bg_img.shape[1] < texture_width:
-            bg_img = cv2.resize(bg_img,(texture_height,texture_width))
+
+        bg_img = cv2.resize(bg_img,(texture_height,texture_width))
         cv2.imwrite(os.path.join(texture_folder,'triangle.jpg'),triangle_img)
         cv2.imwrite(os.path.join(texture_folder, 'rect.jpg'), rectangle_img)
         cv2.imwrite(os.path.join(texture_folder, 'bg.jpg'), bg_img)
+
+def make_texture_folders_v3(texture_num,output_folder):
+    '''
+    Construct texture_num texture folders. This function can be used to construct the texture folders
+    to alter the texture of the target shape. Triangle, rectangle and background have different texture
+    For experiment that use uniform random texture
+    Zhe Zhu, 2020/02/24
+    '''
+    texture_height = 512
+    texture_width = 512
+    for i in range(texture_num):
+        target_idx = '{:05d}'.format(i)
+        target_folder = os.path.join(output_folder,target_idx)
+        if not os.path.exists(target_folder):
+            os.makedirs(target_folder)
+        texture_folder = os.path.join(target_folder,'texture')
+        if not os.path.exists(texture_folder):
+            os.makedirs(texture_folder)
+
+        triangle_img = np.zeros((texture_height,texture_width,3))
+        rectangle_img = np.zeros((texture_height,texture_width,3))
+        bg_img = np.zeros((texture_height,texture_width,3))
+
+        t_r = random.randint(0,255)
+        t_g = random.randint(0,255)
+        t_b = random.randint(0,255)
+        triangle_img[:,:] = (t_r,t_g,t_b)
+
+        r_r = random.randint(0,255)
+        r_g = random.randint(0,255)
+        r_b = random.randint(0,255)
+        rectangle_img[:,:] = (r_r,r_g,r_b)
+
+        b_r = random.randint(0,255)
+        b_g = random.randint(0,255)
+        b_b = random.randint(0,255)
+        bg_img[:,:] = (b_r,b_g,b_b)
+
+        cv2.imwrite(os.path.join(texture_folder,'triangle.jpg'),triangle_img)
+        cv2.imwrite(os.path.join(texture_folder, 'rect.jpg'), rectangle_img)
+        cv2.imwrite(os.path.join(texture_folder, 'bg.jpg'), bg_img)
+
+def tfrecord2imgs(tfrecord_file,output_folder):
+    '''
+    Save the images in tfrecord to a folder
+    Debug purposes
+    Zhe Zhu. 2020/02/21
+    '''
+    dataset = tf.data.TFRecordDataset(tfrecord_file)
+    dataset = dataset.map(dataset_decode_2d)
+    iterator = dataset.make_one_shot_iterator()
+
+    next_elem = iterator.get_next()
+    i = 0
+
+    with tf.Session() as sess:
+        sess.run(tf.global_variables_initializer())
+        try:
+            while True:
+                img,  mask = sess.run(next_elem)
+                img_file_path = os.path.join(output_folder, '{:05d}.png'.format(i))
+                i += 1
+                cv2.imwrite(img_file_path, img)
+        except Exception as e:
+            print(e)
 
 def test_1():
     # test samples. 11/11/2019
@@ -2818,6 +2922,131 @@ def test_38():
     img_folder = '/mnt/sdc/ShapeTexture/simulation_data/0219/val'
     tfrecord_file = '/mnt/sdc/ShapeTexture/simulation_data/0219/val.tfrecord'
     img2tfrecord_(img_folder, 500, 'val', tfrecord_file)
+
+def test_39():
+    '''
+    Check the problem in 0219/val.tfrecord
+    Zhe Zhu, 2020/02/21
+    '''
+    tfrecord_file = '/mnt/sdc/ShapeTexture/simulation_data/0219/val.tfrecord'
+    output_folder = '/mnt/sdc/ShapeTexture/simulation_data/0221_debug'
+    tfrecord2imgs(tfrecord_file,output_folder)
+
+def test_40():
+    '''
+    uniform random texture experiment
+    :return:
+    '''
+    tex_img_num = 20500
+    tgt_tex_folder = '/mnt/sdc/ShapeTexture/simulation_data/uniform_texture_0224'
+    make_texture_folders_v3(tex_img_num, tgt_tex_folder)
+
+def test_41():
+    '''
+    Uniform random texture samples
+    Zhe Zhu, 2020/02/24
+    '''
+    train_sample_num = 20000
+    val_sample_num = 500
+
+    train_output_folder = '/mnt/sdc/ShapeTexture/simulation_data/0224/train'
+    val_output_folder = '/mnt/sdc/ShapeTexture/simulation_data/0224/val'
+
+    textures_folder = '/mnt/sdc/ShapeTexture/simulation_data/uniform_texture_0224'
+
+    img_height = 512
+    img_width = 512
+    layer_num_max = 3
+    scale_min = 20
+    scale_max = 160
+    offset_min = 20
+    offset_max = 160
+    overlap_rate = 0.0
+    texture_img_type = 'jpg'
+    shape_list = ['rect', 'triangle']
+
+    noise_type_train = 'None'
+    noise_param_train = {'mean': 0,
+                         'var': 0.2 * 255}
+    noise_type_val = 'None'
+    noise_param_val = {'s_vs_p': 0.5,
+                       'amount': 0.004}
+
+    iscolor = 1
+
+    for i in range(train_sample_num):
+        tex_folder = os.path.join(textures_folder, '{:05d}'.format(i), 'texture')
+        img_generator = ImageGenerator_v5(texture_folder=tex_folder,
+                                          texture_img_type=texture_img_type,
+                                          img_height=img_height,
+                                          img_width=img_width,
+                                          layer_num_max=layer_num_max,
+                                          scale_min=scale_min,
+                                          scale_max=scale_max,
+                                          offset_min=offset_min,
+                                          offset_max=offset_max,
+                                          shape_list=shape_list,
+                                          noise_type=noise_type_train,
+                                          noise_param=noise_param_train,
+                                          iscolor=iscolor,
+                                          overlap_rate=overlap_rate)
+        img_generator.generate_layout()
+        bg_img_path = os.path.join(tex_folder, 'bg.jpg')
+        bg_img = cv2.imread(bg_img_path)
+        img = img_generator.render_randbg(gray_level=bg_img)
+        mask = np.zeros((img_height, img_width))
+        for layer in img_generator.layers:
+            if layer.pattern.shape_type == 'triangle':
+                mask = layer.mask_union(mask, layer.mask)
+        mask *= 255.0
+        img_file_name = 'train_{:05d}.png'.format(i)
+        mask_file_name = 'train_{:05d}_mask.png'.format(i)
+        img_path = os.path.join(train_output_folder, img_file_name)
+        mask_path = os.path.join(train_output_folder, mask_file_name)
+        cv2.imwrite(img_path, img)
+        cv2.imwrite(mask_path, mask)
+
+    for i in range(val_sample_num):
+        bg_gray_level_bgr = np.random.rand(img_height, img_width, 3) * 255
+        tex_folder = os.path.join(textures_folder, '{:05d}'.format(i + train_sample_num), 'texture')
+        img_generator = ImageGenerator_v5(texture_folder=tex_folder,
+                                          texture_img_type=texture_img_type,
+                                          img_height=img_height,
+                                          img_width=img_width,
+                                          layer_num_max=layer_num_max,
+                                          scale_min=scale_min,
+                                          scale_max=scale_max,
+                                          offset_min=offset_min,
+                                          offset_max=offset_max,
+                                          shape_list=shape_list,
+                                          noise_type=noise_type_val,
+                                          noise_param=noise_param_val,
+                                          iscolor=iscolor,
+                                          overlap_rate=overlap_rate)
+        img_generator.generate_layout()
+        bg_img_path = os.path.join(tex_folder, 'bg.jpg')
+        bg_img = cv2.imread(bg_img_path)
+        img = img_generator.render_randbg(gray_level=bg_img)
+        mask = np.zeros((img_height, img_width))
+        for layer in img_generator.layers:
+            if layer.pattern.shape_type == 'triangle':
+                mask = layer.mask_union(mask, layer.mask)
+        mask *= 255.0
+        img_file_name = 'val_{:05d}.png'.format(i)
+        mask_file_name = 'val_{:05d}_mask.png'.format(i)
+        img_path = os.path.join(val_output_folder, img_file_name)
+        mask_path = os.path.join(val_output_folder, mask_file_name)
+        cv2.imwrite(img_path, img)
+        cv2.imwrite(mask_path, mask)
+
+def test_42():
+    img_folder = '/mnt/sdc/ShapeTexture/simulation_data/0224/train'
+    tfrecord_file = '/mnt/sdc/ShapeTexture/simulation_data/0224/train.tfrecord'
+    img2tfrecord_(img_folder, 20000, 'train', tfrecord_file)
+
+    img_folder = '/mnt/sdc/ShapeTexture/simulation_data/0224/val'
+    tfrecord_file = '/mnt/sdc/ShapeTexture/simulation_data/0224/val.tfrecord'
+    img2tfrecord_(img_folder, 500, 'val', tfrecord_file)
 def main():
     #test_1()
     #test_2()
@@ -2855,7 +3084,11 @@ def main():
     #test_34()
     #test_35()
     #test_36()
-    # test_37()
-    test_38()
+    #test_37()
+    #test_38()
+    #test_39()
+    #test_40()
+    #test_41()
+    test_42()
 if __name__ == "__main__":
     main()
