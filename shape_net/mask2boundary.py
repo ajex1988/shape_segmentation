@@ -22,6 +22,27 @@ def extract_contours(img):
             cnt_img[pts[1],pts[0]] = 255
     return cnt_img, contours
 
+def cvt_mask2cnt_single(mask_img_file, cnt_img_file):
+    '''
+    Convert a binary mask image to a corresponding contour image
+    mask_img_file: source image file to load
+    cnt_img_file: target image file to write
+    '''
+    mask_img = cv2.imread(mask_img_file,cv2.IMREAD_GRAYSCALE)
+    cnt_img, cnts = extract_contours(mask_img)
+    cv2.imwrite(cnt_img_file,cnt_img)
+
+def cvt_mask2cnt_batch(mask_file_list,cnt_file_list):
+    '''
+    Batch convert mask images to contour images
+    mask_file_list: source mask image files
+    cnt_file_list: target contour image files
+    '''
+    img_num = len(mask_file_list)
+    for i in range(img_num):
+        src_img_file = mask_file_list[i]
+        tgt_img_file = cnt_file_list[i]
+        cvt_mask2cnt_single(src_img_file,tgt_img_file)
 
 def test():
     '''
@@ -34,5 +55,31 @@ def test():
     cv2.imwrite(output_img_file,contour_img)
     print(len(contours))
 
+def task_1():
+    '''
+    Convert the 0219, 0224 masks to contours
+    '''
+    src_folder_list = ['/mnt/sdc/ShapeTexture/simulation_data/0219/train',
+                       '/mnt/sdc/ShapeTexture/simulation_data/0219/val',
+                       '/mnt/sdc/ShapeTexture/simulation_data/0224/train',
+                       '/mnt/sdc/ShapeTexture/simulation_data/0224/val']
+    tgt_folder_list = ['mnt/sdc/ShapeTexture/simulation_data/0219_contour/train',
+                       'mnt/sdc/ShapeTexture/simulation_data/0219_contour/val',
+                       'mnt/sdc/ShapeTexture/simulation_data/0224_contour/train',
+                       'mnt/sdc/ShapeTexture/simulation_data/0224_contour/val']
+    folder_num = len(src_folder_list)
+    for i in range(folder_num):
+        src_folder = src_folder_list[i]
+        tgt_folder = tgt_folder_list[i]
+        src_mask_file_list = glob.glob(src_folder+'/*mask.png')
+        tgt_cnt_file_list = []
+        for src_mask_file in src_mask_file_list:
+            mask_file_name = os.path.basename(src_mask_file)
+            cnt_file_name = os.path.join(tgt_folder,mask_file_name)
+            tgt_cnt_file_list.append(cnt_file_name)
+        cvt_mask2cnt_batch(src_mask_file_list,tgt_cnt_file_list)
+
+
 if __name__=="__main__":
-    test()
+    #test()
+    task_1()
