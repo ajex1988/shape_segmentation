@@ -55,6 +55,15 @@ def test():
     cv2.imwrite(output_img_file,contour_img)
     print(len(contours))
 
+def test_1():
+    '''
+    Debug use. To solve the problem that still output mask image
+    2020/03/23
+    '''
+    src_img_file = '/mnt/sdc/ShapeTexture/simulation_data/0224/val/val_00003.png'
+    tgt_img_file = '/mnt/sdc/ShapeTexture/simulation_data/debug/20200323.png'
+    cvt_mask2cnt_single(src_img_file,tgt_img_file)
+
 def task_1():
     '''
     Convert the 0219, 0224 masks to contours
@@ -82,4 +91,5 @@ def task_1():
 
 if __name__=="__main__":
     #test()
-    task_1()
+    test_1()
+    #task_1()
