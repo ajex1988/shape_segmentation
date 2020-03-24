@@ -72,24 +72,27 @@ def task_1():
                        '/mnt/sdc/ShapeTexture/simulation_data/0219/val',
                        '/mnt/sdc/ShapeTexture/simulation_data/0224/train',
                        '/mnt/sdc/ShapeTexture/simulation_data/0224/val']
-    tgt_folder_list = ['mnt/sdc/ShapeTexture/simulation_data/0219_contour/train',
-                       'mnt/sdc/ShapeTexture/simulation_data/0219_contour/val',
-                       'mnt/sdc/ShapeTexture/simulation_data/0224_contour/train',
-                       'mnt/sdc/ShapeTexture/simulation_data/0224_contour/val']
+    tgt_folder_list = ['/mnt/sdc/ShapeTexture/simulation_data/0219_contour/train',
+                       '/mnt/sdc/ShapeTexture/simulation_data/0219_contour/val',
+                       '/mnt/sdc/ShapeTexture/simulation_data/0224_contour/train',
+                       '/mnt/sdc/ShapeTexture/simulation_data/0224_contour/val']
     folder_num = len(src_folder_list)
     for i in range(folder_num):
         src_folder = src_folder_list[i]
         tgt_folder = tgt_folder_list[i]
         src_mask_file_list = glob.glob(src_folder+'/*mask.png')
+        print("src_folder: {0}".format(src_folder))
+        print("tgt_folder: {0}".format(tgt_folder))
         tgt_cnt_file_list = []
         for src_mask_file in src_mask_file_list:
             mask_file_name = os.path.basename(src_mask_file)
             cnt_file_name = os.path.join(tgt_folder,mask_file_name)
             tgt_cnt_file_list.append(cnt_file_name)
+        print("Converting {0} images".format(len(tgt_cnt_file_list)))
         cvt_mask2cnt_batch(src_mask_file_list,tgt_cnt_file_list)
 
 
 if __name__=="__main__":
     #test()
-    test_1()
-    #task_1()
+    #test_1()
+    task_1()
