@@ -3047,6 +3047,72 @@ def test_42():
     img_folder = '/mnt/sdc/ShapeTexture/simulation_data/0224/val'
     tfrecord_file = '/mnt/sdc/ShapeTexture/simulation_data/0224/val.tfrecord'
     img2tfrecord_(img_folder, 500, 'val', tfrecord_file)
+
+def test_43():
+    '''
+    Start from simplest case
+    Create three simple domains
+    Zhe Zhu 2020/04/17
+    '''
+    sample_num = 5000
+    tex_folder_list = ['/mnt/sdc/ShapeTexture/simulation_data/0317_da/domain_1/texture',
+                       '/mnt/sdc/ShapeTexture/simulation_data/0317_da/domain_2/texture',
+                       '/mnt/sdc/ShapeTexture/simulation_data/0317_da/domain_3/texture']
+    output_folder_list = ['/mnt/sdc/ShapeTexture/simulation_data/0317_da/domain_1/images',
+                          '/mnt/sdc/ShapeTexture/simulation_data/0317_da/domain_2/images',
+                          '/mnt/sdc/ShapeTexture/simulation_data/0317_da/domain_3/images']
+
+    img_height = 512
+    img_width = 512
+    layer_num_max = 3
+    scale_min = 20
+    scale_max = 160
+    offset_min = 20
+    offset_max = 160
+    overlap_rate = 0.0
+    texture_img_type = 'jpg'
+    shape_list = ['rect', 'triangle']
+
+    noise_type = 'None'
+    noise_param = {'mean': 0,
+                         'var': 0.2 * 255}
+    iscolor = 1
+
+    for i in range(len(tex_folder_list)):
+        tex_folder = tex_folder_list[i]
+        output_folder = output_folder_list[i]
+        img_generator = ImageGenerator_v5(texture_folder=tex_folder,
+                                          texture_img_type=texture_img_type,
+                                          img_height=img_height,
+                                          img_width=img_width,
+                                          layer_num_max=layer_num_max,
+                                          scale_min=scale_min,
+                                          scale_max=scale_max,
+                                          offset_min=offset_min,
+                                          offset_max=offset_max,
+                                          shape_list=shape_list,
+                                          noise_type=noise_type,
+                                          noise_param=noise_param,
+                                          iscolor=iscolor,
+                                          overlap_rate=overlap_rate)
+        for j in range(sample_num):
+            img_generator.generate_layout()
+            bg_img_path = os.path.join(tex_folder, 'bg.jpg')
+            bg_img = cv2.imread(bg_img_path)
+            img = img_generator.render_randbg(gray_level=bg_img)
+            mask = np.zeros((img_height, img_width))
+            for layer in img_generator.layers:
+                if layer.pattern.shape_type == 'triangle':
+                    mask = layer.mask_union(mask, layer.mask)
+            mask *= 255.0
+            img_file_name = 'train_{:05d}.png'.format(i)
+            mask_file_name = 'train_{:05d}_mask.png'.format(i)
+            img_path = os.path.join(output_folder, img_file_name)
+            mask_path = os.path.join(output_folder, mask_file_name)
+            cv2.imwrite(img_path, img)
+            cv2.imwrite(mask_path, mask)
+
+
 def main():
     #test_1()
     #test_2()
@@ -3089,6 +3155,7 @@ def main():
     #test_39()
     #test_40()
     #test_41()
-    test_42()
+    #test_42()
+    test_43()
 if __name__ == "__main__":
     main()
