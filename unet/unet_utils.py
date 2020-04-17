@@ -19,12 +19,12 @@ class Recorder:
     out_path : Destination of TFRecords output file
     size : expected images size
     '''
-    
+
     image_paths = glob.glob(image_dir+'/*.*')
     mask_paths = glob.glob(mask_dir+'/*.*')
     num_images = len(image_paths)
 
-    
+
     with tf.python_io.TFRecordWriter(out_path) as writer :
 
        for i,(path,mask) in enumerate(zip(image_paths,mask_paths)):
@@ -76,7 +76,7 @@ class Recorder:
            # Serialize the data
            serialized = example.SerializeToString()
 
-           # Write the serialized 
+           # Write the serialized
            writer.write(serialized)
     print('\nWritten images and mask into {}'.format(out_path))
 
@@ -103,7 +103,7 @@ class Recorder:
 
        # decode the raw bytes so it becomes a tensor with type
 
-       image = tf.decode_raw(image_raw,tf.float64)
+       image = tf.image.decode_image(image_raw,dtype=tf.uint8)
        image = tf.cast(image,tf.float32)
        image = tf.reshape(image, image_shape)
        image = tf.div(tf.subtract(image,
@@ -111,8 +111,8 @@ class Recorder:
                     tf.subtract(tf.reduce_max(image),
                                 tf.reduce_min(image)) + 1e-8) * 255.0
        image = tf.image.resize_images(image,(resize_height,resize_width))
-   
-       mask = tf.decode_raw(mask_raw,tf.float64)
+
+       mask = tf.image.decode_image(mask_raw,dtype=tf.uint8)
        mask = tf.cast(mask, tf.float32)
        mask = tf.reshape(mask, mask_shape)
        mask = mask/(tf.reduce_max(mask)+1e-7)
@@ -121,7 +121,7 @@ class Recorder:
        #d={'input':image,'mask': mask}
        d = image,mask
        return d
-    
+
     dataset = tf.data.TFRecordDataset(filenames=filenames)
     # Parse the serialised data to TFRecords files.
     # returns Tensorflow tensors for the image and labels.
@@ -129,10 +129,10 @@ class Recorder:
 
     if shuffle:
         dataset = dataset.shuffle(buffer_size = 256)
-    
+
     dataset = dataset.repeat(repeat_count) # Repeat the dataset this time
     batch_dataset = dataset.batch(batch_size)    # Batch Size
     iterator = batch_dataset.make_one_shot_iterator()   # Make an iterator
     batch_features,batch_labels = iterator.get_next()  # Tensors to get next batch of image and their labels
-    
+
     return batch_features, batch_labels
