@@ -3055,12 +3055,12 @@ def test_43():
     Zhe Zhu 2020/04/17
     '''
     sample_num = 5000
-    tex_folder_list = ['/mnt/sdc/ShapeTexture/simulation_data/0317_da/domain_1/texture',
-                       '/mnt/sdc/ShapeTexture/simulation_data/0317_da/domain_2/texture',
-                       '/mnt/sdc/ShapeTexture/simulation_data/0317_da/domain_3/texture']
-    output_folder_list = ['/mnt/sdc/ShapeTexture/simulation_data/0317_da/domain_1/images',
-                          '/mnt/sdc/ShapeTexture/simulation_data/0317_da/domain_2/images',
-                          '/mnt/sdc/ShapeTexture/simulation_data/0317_da/domain_3/images']
+    tex_folder_list = ['/mnt/sdc/ShapeTexture/simulation_data/0417_da/domain_1/texture',
+                       '/mnt/sdc/ShapeTexture/simulation_data/0417_da/domain_2/texture',
+                       '/mnt/sdc/ShapeTexture/simulation_data/0417_da/domain_3/texture']
+    output_folder_list = ['/mnt/sdc/ShapeTexture/simulation_data/0417_da/domain_1/images',
+                          '/mnt/sdc/ShapeTexture/simulation_data/0417_da/domain_2/images',
+                          '/mnt/sdc/ShapeTexture/simulation_data/0417_da/domain_3/images']
 
     img_height = 512
     img_width = 512
@@ -3081,21 +3081,21 @@ def test_43():
     for i in range(len(tex_folder_list)):
         tex_folder = tex_folder_list[i]
         output_folder = output_folder_list[i]
-        img_generator = ImageGenerator_v5(texture_folder=tex_folder,
-                                          texture_img_type=texture_img_type,
-                                          img_height=img_height,
-                                          img_width=img_width,
-                                          layer_num_max=layer_num_max,
-                                          scale_min=scale_min,
-                                          scale_max=scale_max,
-                                          offset_min=offset_min,
-                                          offset_max=offset_max,
-                                          shape_list=shape_list,
-                                          noise_type=noise_type,
-                                          noise_param=noise_param,
-                                          iscolor=iscolor,
-                                          overlap_rate=overlap_rate)
         for j in range(sample_num):
+            img_generator = ImageGenerator_v5(texture_folder=tex_folder,
+                                              texture_img_type=texture_img_type,
+                                              img_height=img_height,
+                                              img_width=img_width,
+                                              layer_num_max=layer_num_max,
+                                              scale_min=scale_min,
+                                              scale_max=scale_max,
+                                              offset_min=offset_min,
+                                              offset_max=offset_max,
+                                              shape_list=shape_list,
+                                              noise_type=noise_type,
+                                              noise_param=noise_param,
+                                              iscolor=iscolor,
+                                              overlap_rate=overlap_rate)
             img_generator.generate_layout()
             bg_img_path = os.path.join(tex_folder, 'bg.jpg')
             bg_img = cv2.imread(bg_img_path)
