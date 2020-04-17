@@ -3105,8 +3105,8 @@ def test_43():
                 if layer.pattern.shape_type == 'triangle':
                     mask = layer.mask_union(mask, layer.mask)
             mask *= 255.0
-            img_file_name = 'train_{:05d}.png'.format(i)
-            mask_file_name = 'train_{:05d}_mask.png'.format(i)
+            img_file_name = 'train_{:05d}.png'.format(j)
+            mask_file_name = 'train_{:05d}_mask.png'.format(j)
             img_path = os.path.join(output_folder, img_file_name)
             mask_path = os.path.join(output_folder, mask_file_name)
             cv2.imwrite(img_path, img)
