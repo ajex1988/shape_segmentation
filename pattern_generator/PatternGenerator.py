@@ -3112,6 +3112,70 @@ def test_43():
             cv2.imwrite(img_path, img)
             cv2.imwrite(mask_path, mask)
 
+def test_44():
+    '''
+    Following maciej's stupid idea, use different bg color
+    Zhe Zhu, 2020/04/28
+    '''
+    sample_num = 5000
+    tex_folder_list = ['/mnt/sdc/ShapeTexture/simulation_data/0428_da/domain_1/texture',
+                       '/mnt/sdc/ShapeTexture/simulation_data/0428_da/domain_2/texture',
+                       '/mnt/sdc/ShapeTexture/simulation_data/0428_da/domain_3/texture']
+    output_folder_list = ['/mnt/sdc/ShapeTexture/simulation_data/0428_da/domain_1/images',
+                          '/mnt/sdc/ShapeTexture/simulation_data/0428_da/domain_2/images',
+                          '/mnt/sdc/ShapeTexture/simulation_data/0428_da/domain_3/images']
+
+    img_height = 512
+    img_width = 512
+    layer_num_max = 3
+    scale_min = 20
+    scale_max = 160
+    offset_min = 20
+    offset_max = 160
+    overlap_rate = 0.0
+    texture_img_type = 'jpg'
+    shape_list = ['rect', 'triangle']
+
+    noise_type = 'None'
+    noise_param = {'mean': 0,
+                   'var': 0.2 * 255}
+    iscolor = 1
+
+    for i in range(len(tex_folder_list)):
+        tex_folder = tex_folder_list[i]
+        bgtex_idx = random.randint(0,19999)
+        bg_tex_folder = os.path.join('/mnt/sdc/ShapeTexture/simulation_data/uniform_texture_0224', '{:05d}'.format(bgtex_idx),'texture')
+        output_folder = output_folder_list[i]
+        for j in range(sample_num):
+            img_generator = ImageGenerator_v5(texture_folder=tex_folder,
+                                              texture_img_type=texture_img_type,
+                                              img_height=img_height,
+                                              img_width=img_width,
+                                              layer_num_max=layer_num_max,
+                                              scale_min=scale_min,
+                                              scale_max=scale_max,
+                                              offset_min=offset_min,
+                                              offset_max=offset_max,
+                                              shape_list=shape_list,
+                                              noise_type=noise_type,
+                                              noise_param=noise_param,
+                                              iscolor=iscolor,
+                                              overlap_rate=overlap_rate)
+            img_generator.generate_layout()
+            bg_img_path = os.path.join(bg_tex_folder, 'bg.jpg')
+            bg_img = cv2.imread(bg_img_path)
+            img = img_generator.render_randbg(gray_level=bg_img)
+            mask = np.zeros((img_height, img_width))
+            for layer in img_generator.layers:
+                if layer.pattern.shape_type == 'triangle':
+                    mask = layer.mask_union(mask, layer.mask)
+            mask *= 255.0
+            img_file_name = 'train_{:05d}.png'.format(j)
+            mask_file_name = 'train_{:05d}_mask.png'.format(j)
+            img_path = os.path.join(output_folder, img_file_name)
+            mask_path = os.path.join(output_folder, mask_file_name)
+            cv2.imwrite(img_path, img)
+            cv2.imwrite(mask_path, mask)
 
 def main():
     #test_1()
@@ -3156,6 +3220,7 @@ def main():
     #test_40()
     #test_41()
     #test_42()
-    test_43()
+    #test_43()
+    test_44()
 if __name__ == "__main__":
     main()
