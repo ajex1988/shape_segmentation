@@ -3143,8 +3143,6 @@ def test_44():
 
     for i in range(len(tex_folder_list)):
         tex_folder = tex_folder_list[i]
-        bgtex_idx = random.randint(0,19999)
-        bg_tex_folder = os.path.join('/mnt/sdc/ShapeTexture/simulation_data/uniform_texture_0224', '{:05d}'.format(bgtex_idx),'texture')
         output_folder = output_folder_list[i]
         for j in range(sample_num):
             img_generator = ImageGenerator_v5(texture_folder=tex_folder,
@@ -3162,6 +3160,9 @@ def test_44():
                                               iscolor=iscolor,
                                               overlap_rate=overlap_rate)
             img_generator.generate_layout()
+            bgtex_idx = random.randint(0, 19999)
+            bg_tex_folder = os.path.join('/mnt/sdc/ShapeTexture/simulation_data/uniform_texture_0224',
+                                         '{:05d}'.format(bgtex_idx), 'texture')
             bg_img_path = os.path.join(bg_tex_folder, 'bg.jpg')
             bg_img = cv2.imread(bg_img_path)
             img = img_generator.render_randbg(gray_level=bg_img)
